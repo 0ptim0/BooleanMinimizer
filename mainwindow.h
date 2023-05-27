@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 
+#include "booleanminimizer.h"
 #include "buttonhandler.h"
 
 QT_BEGIN_NAMESPACE
@@ -21,5 +22,10 @@ public:
 private:
     Ui::MainWindow *ui;
     ButtonHandler *button_handler;
+    BooleanMinimizer *boolean_minimizer;
+
+public slots:
+    void print();
+    void print(QTableWidgetItem *index);
 };
 #endif  // MAINWINDOW_H

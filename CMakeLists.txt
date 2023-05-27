@@ -16,6 +16,8 @@ set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         buttonhandler.cpp
+        booleanminimizer.cpp
+        booleanminimizer.h
         mainwindow.h
         buttonhandler.h
         mainwindow.ui

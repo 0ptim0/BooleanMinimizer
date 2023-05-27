@@ -8,10 +8,12 @@
 
 class ButtonHandler : public QObject {
 public:
-    ButtonHandler(QTableWidget *table, QPushButton *add_input,
-                  QPushButton *add_output, QPushButton *add_term,
-                  QPushButton *remove_input, QPushButton *remove_output,
-                  QPushButton *remove_term);
+    explicit ButtonHandler(QTableWidget *input_table,
+                           QTableWidget *output_table, QPushButton *add_input,
+                           QPushButton *add_output, QPushButton *add_term,
+                           QPushButton *remove_input,
+                           QPushButton *remove_output,
+                           QPushButton *remove_term);
 
 public slots:
     void addInput();
@@ -20,9 +22,12 @@ public slots:
     void deleteInput();
     void deleteOutput();
     void deleteTerm();
+    void changeInput(QTableWidgetItem *index);
+    void changeOutput(QTableWidgetItem *index);
 
 private:
-    QTableWidget *m_table;
+    QTableWidget *m_input_table;
+    QTableWidget *m_output_table;
     QPushButton *m_add_input;
     QPushButton *m_add_output;
     QPushButton *m_add_term;
@@ -31,20 +36,9 @@ private:
     QPushButton *m_remove_term;
 
 private:
-    unsigned m_inputs;
-    unsigned m_outputs;
-    unsigned m_terms;
-
-private:
-    enum ButtonType {
-        INPUT = 0,
-        OUTPUT = 1,
-        TERM = 2,
-    };
-
-private:
-    bool increase(ButtonType type);
-    bool reduce(ButtonType type);
+    unsigned m_inputs{1};
+    unsigned m_outputs{1};
+    unsigned m_terms{1};
 };
 
 #endif  // BUTTONHANDLER_H
