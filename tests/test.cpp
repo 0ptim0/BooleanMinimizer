@@ -17,6 +17,6 @@ TEST(Calculation, Minterms_4x7) {
     BooleanMinimizer boolean_minimizer(input, output);
     auto calc = boolean_minimizer.calculate();
     for (auto &a : calc) {
-        std::cout << a.toStdString() << std::endl;
+        std::cout << std::endl << a.toStdString() << std::endl;
     }
 }
