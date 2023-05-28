@@ -12,9 +12,11 @@
 
 class BooleanMinimizer : public QObject {
 public:
-    explicit BooleanMinimizer(QTextBrowser *output_display);
+    explicit BooleanMinimizer();
+    explicit BooleanMinimizer(std::vector<std::vector<int8_t>> &input,
+                              std::vector<std::vector<int8_t>> &output);
 
-public slots:
+public:
     void addInput();
     void addOutput();
     void addTerm();
@@ -23,18 +25,15 @@ public slots:
     void deleteTerm();
     void changeInput(QTableWidgetItem *index);
     void changeOutput(QTableWidgetItem *index);
-
-public:
-    std::vector<std::vector<std::vector<int8_t>>> getBooleanFunction();
+    std::vector<QString> calculate();
 
 private:
-    void calculate();
-    std::vector<std::vector<int8_t>> calculateColumn(std::vector<int> &indexes);
+    std::vector<std::vector<int8_t>> calculateFunction(std::vector<int> &indexes);
     void convertToString(std::vector<QString> &str,
                          std::vector<std::vector<std::vector<int8_t>>> &table);
+    int compare(std::vector<int8_t> &first, std::vector<int8_t> &second);
 
 private:
-    QTextBrowser *m_output_display;
     std::vector<std::vector<int8_t>> m_input_table{{1}};
     std::vector<std::vector<int8_t>> m_output_table{{1}};
     std::vector<std::vector<std::vector<int8_t>>> m_boolean_function;

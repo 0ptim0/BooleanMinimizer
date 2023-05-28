@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 
 project(boolean_minimizer VERSION 0.1 LANGUAGES CXX)
 
+set(CMAKE_TOOLCHAIN_FILE toolchain.cmake)
+
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -15,11 +17,9 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
-        buttonhandler.cpp
         booleanminimizer.cpp
         booleanminimizer.h
         mainwindow.h
-        buttonhandler.h
         mainwindow.ui
 )
 
@@ -61,6 +61,15 @@ install(TARGETS boolean_minimizer
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+        option(SERIALIZATION_TESTS "build tests (or no)" ON)
+        if (SERIALIZATION_TESTS)
+                add_library(example_google_tests ${SRC})
+                enable_testing()
+                add_subdirectory(tests)
+        endif()
+endif()
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(boolean_minimizer)

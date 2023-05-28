@@ -1,11 +1,15 @@
 #include "booleanminimizer.h"
 
 #include <iostream>
+#include <list>
 
-BooleanMinimizer::BooleanMinimizer(QTextBrowser *output_display)
-    : m_output_display(output_display) {}
+BooleanMinimizer::BooleanMinimizer() {}
 
-void BooleanMinimizer::calculate() {
+BooleanMinimizer::BooleanMinimizer(std::vector<std::vector<int8_t>> &input,
+                                   std::vector<std::vector<int8_t>> &output)
+    : m_input_table(input), m_output_table(output) {}
+
+std::vector<QString> BooleanMinimizer::calculate() {
     mutex.lock();
     std::vector<std::vector<int>> indexes(m_outputs);
     std::vector<int> v;
@@ -21,24 +25,21 @@ void BooleanMinimizer::calculate() {
 
     m_boolean_function.clear();
     for (auto &i : indexes) {
-        m_boolean_function.push_back(calculateColumn(i));
+        m_boolean_function.push_back(calculateFunction(i));
     }
 
     std::vector<QString> s;
     convertToString(s, m_boolean_function);
-    m_output_display->clear();
-    for (auto &c : s) {
-        m_output_display->append(c);
-    }
     mutex.unlock();
+    return s;
 }
 
-std::vector<std::vector<int8_t>> BooleanMinimizer::calculateColumn(
+std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
     std::vector<int> &indexes) {
     std::vector<std::vector<int8_t>> vec;
     std::map<std::vector<int8_t>, int> uniq;
-    std::multimap<int, std::vector<int8_t>> sorted;
-    int prev = 0;
+    std::multimap<int, std::vector<int8_t>> *sorted =
+        new std::multimap<int, std::vector<int8_t>>;
 
     for (auto &i : indexes) {
         vec.push_back(m_input_table[i]);
@@ -51,31 +52,75 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateColumn(
                 ones++;
             }
         }
-        prev = ones;
         uniq.insert(std::pair<std::vector<int8_t>, int>(vec[i], ones));
     }
 
-    bool loop = false;
     for (auto &i : uniq) {
-        sorted.insert(std::pair<int, std::vector<int8_t>>(i.second, i.first));
-        if (i.second - prev == 1) {
-            loop = true;
-        }
-        prev = i.second;
+        sorted->insert(std::pair<int, std::vector<int8_t>>(i.second, i.first));
     }
 
-    while (0) {
+    bool loop = true;
+    std::multimap<int, std::vector<int8_t>> *pmap = sorted;
+    std::multimap<int, std::vector<int8_t>> *nmap =
+        new std::multimap<int, std::vector<int8_t>>;
+    std::list<std::vector<int8_t>> simple;
+
+    while (loop) {
+        for (auto it_g1 = pmap->begin(); it_g1 != pmap->end(); it_g1++) {
+            bool added = false;
+            auto it_g2 = pmap->find(it_g1->first + 1);
+            if (it_g2 == pmap->end()) {
+                break;
+            }
+            auto val = *it_g1;
+            for (; it_g2 != pmap->end(); it_g2++) {
+                int index = 0;
+                if ((index = compare(val.second, it_g2->second)) >= 0) {
+                    added = true;
+                    auto new_val = val.second;
+                    new_val[index] = -1;
+                    nmap->insert(std::pair<int, std::vector<int8_t>>(val.first,
+                                                                     new_val));
+                }
+            }
+            if (!added) {
+                simple.push_back(val.second);
+            }
+        }
+        if (nmap->size() == 0) {
+            loop = false;
+        } else {
+            delete pmap;
+            pmap = nmap;
+            nmap = new std::multimap<int, std::vector<int8_t>>;
+        }
+    }
+
+    vec.clear();
+    for (auto &a : simple) {
+        vec.push_back(a);
     }
 
     return vec;
 }
 
-std::vector<std::vector<std::vector<int8_t>>>
-BooleanMinimizer::getBooleanFunction() {
-    mutex.lock();
-    std::vector<std::vector<std::vector<int8_t>>> tmp = m_boolean_function;
-    mutex.unlock();
-    return tmp;
+int BooleanMinimizer::compare(std::vector<int8_t> &first,
+                              std::vector<int8_t> &second) {
+    int diff_index = -1;
+    if (first.size() != second.size()) {
+        return diff_index;
+    }
+    for (int i = 0; i < first.size(); i++) {
+        if (first[i] == second[i]) {
+            continue;
+        } else if (first[i] != second[i] && diff_index == -1) {
+            diff_index = i;
+        } else {
+            diff_index = -1;
+            break;
+        }
+    }
+    return diff_index;
 }
 
 void BooleanMinimizer::convertToString(
