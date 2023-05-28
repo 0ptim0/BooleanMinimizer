@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <map>
 #include <mutex>
+#include <set>
 #include <vector>
 
 #include "qtablewidget.h"
@@ -28,10 +29,18 @@ public:
     std::vector<QString> calculate();
 
 private:
-    std::vector<std::vector<int8_t>> calculateFunction(std::vector<int> &indexes);
+    std::vector<std::vector<int8_t>> calculateFunction(
+        std::vector<int> &indexes);
     void convertToString(std::vector<QString> &str,
                          std::vector<std::vector<std::vector<int8_t>>> &table);
-    int compare(std::vector<int8_t> &first, std::vector<int8_t> &second);
+    int compareWithDiff(std::vector<int8_t> &first,
+                        std::vector<int8_t> &second);
+    bool compareWithAbsorb(std::vector<int8_t> &first,
+                           std::vector<int8_t> &second);
+    void combine(std::vector<std::vector<int>> &minterms_w_indexes,
+                 int number_of_miniterms, int index, int dnf_length,
+                 std::set<int> &tmp, std::set<int> &indexes,
+                 std::vector<std::set<int>> &minimal_w_indexes);
 
 private:
     std::vector<std::vector<int8_t>> m_input_table{{1}};

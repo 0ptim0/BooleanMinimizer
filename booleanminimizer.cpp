@@ -1,7 +1,6 @@
 #include "booleanminimizer.h"
 
 #include <iostream>
-#include <list>
 
 BooleanMinimizer::BooleanMinimizer() {}
 
@@ -38,8 +37,7 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
     std::vector<int> &indexes) {
     std::vector<std::vector<int8_t>> vec;
     std::map<std::vector<int8_t>, int> uniq;
-    std::multimap<int, std::vector<int8_t>> *sorted =
-        new std::multimap<int, std::vector<int8_t>>;
+    std::multimap<int, std::vector<int8_t>> sorted;
 
     for (auto &i : indexes) {
         vec.push_back(m_input_table[i]);
@@ -56,14 +54,15 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
     }
 
     for (auto &i : uniq) {
-        sorted->insert(std::pair<int, std::vector<int8_t>>(i.second, i.first));
+        sorted.insert(std::pair<int, std::vector<int8_t>>(i.second, i.first));
     }
 
     bool loop = true;
-    std::multimap<int, std::vector<int8_t>> *pmap = sorted;
+    std::multimap<int, std::vector<int8_t>> *pmap =
+        new std::multimap<int, std::vector<int8_t>>(sorted);
     std::multimap<int, std::vector<int8_t>> *nmap =
         new std::multimap<int, std::vector<int8_t>>;
-    std::list<std::vector<int8_t>> simple;
+    std::vector<std::vector<int8_t>> simple;
 
     while (loop) {
         std::map<std::vector<int8_t>, bool> indexes;
@@ -80,7 +79,7 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
             auto val = *it_g1;
             for (; it_g2 != pmap->end(); it_g2++) {
                 int index = 0;
-                if ((index = compare(val.second, it_g2->second)) >= 0) {
+                if ((index = compareWithDiff(val.second, it_g2->second)) >= 0) {
                     auto new_val = val.second;
                     new_val[index] = -1;
                     nmap->insert(std::pair<int, std::vector<int8_t>>(val.first,
@@ -104,16 +103,45 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
         }
     }
 
-    vec.clear();
-    for (auto &a : simple) {
-        vec.push_back(a);
+    std::vector<std::vector<int>> kernel(simple.size());
+    for (int i = 0; i < simple.size(); i++) {
+        int j = 0;
+        for (auto &b : sorted) {
+            if (compareWithAbsorb(simple[i], b.second)) {
+                kernel[i].push_back(j);
+            }
+            j++;
+        }
+    }
+
+    std::vector<std::vector<int>> min;
+    std::set<int> tmp;
+    std::set<int> ind;
+    std::vector<std::set<int>> minimal_w_indexes;
+    for (int i = 1; i <= simple.size(); i++) {
+        combine(kernel, i, 0, sorted.size(), tmp, ind, minimal_w_indexes);
+    }
+
+    if (minimal_w_indexes.size() > 0) {
+        int min_ind = 0;
+        int min_size = minimal_w_indexes[min_ind].size();
+        vec.clear();
+        for (int i = 1; i < minimal_w_indexes.size(); i++) {
+            if (minimal_w_indexes[i].size() <= min_size) {
+                min_size = minimal_w_indexes.size();
+                min_ind = i;
+            };
+        }
+        for (auto &a : minimal_w_indexes[min_ind]) {
+            vec.push_back(simple[a]);
+        }
     }
 
     return vec;
 }
 
-int BooleanMinimizer::compare(std::vector<int8_t> &first,
-                              std::vector<int8_t> &second) {
+int BooleanMinimizer::compareWithDiff(std::vector<int8_t> &first,
+                                      std::vector<int8_t> &second) {
     int diff_index = -1;
     if (first.size() != second.size()) {
         return diff_index;
@@ -129,6 +157,44 @@ int BooleanMinimizer::compare(std::vector<int8_t> &first,
         }
     }
     return diff_index;
+}
+
+bool BooleanMinimizer::compareWithAbsorb(std::vector<int8_t> &first,
+                                         std::vector<int8_t> &second) {
+    if (first.size() != second.size()) {
+        return false;
+    }
+    for (int i = 0; i < first.size(); i++) {
+        if (first[i] == second[i] || (first[i] == -1 || second[i] == -1)) {
+            continue;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+void BooleanMinimizer::combine(
+    std::vector<std::vector<int>> &minterms_w_indexes, int number_of_miniterms,
+    int index, int dnf_length, std::set<int> &tmp, std::set<int> &indexes,
+    std::vector<std::set<int>> &minimal_w_indexes) {
+    for (int i = index; i < minterms_w_indexes.size(); i++) {
+        std::set<int> dindexes = indexes;
+        dindexes.insert(i);
+        std::set<int> dtmp = tmp;
+        for (int j = 0; j < minterms_w_indexes[i].size(); j++) {
+            dtmp.insert(minterms_w_indexes[i][j]);
+        }
+        if (number_of_miniterms > 1) {
+            combine(minterms_w_indexes, number_of_miniterms - 1, index + 1,
+                    dnf_length, dtmp, dindexes, minimal_w_indexes);
+        } else {
+            if (dtmp.size() == dnf_length) {
+                minimal_w_indexes.push_back(dindexes);
+            }
+        }
+    }
+    return;
 }
 
 void BooleanMinimizer::convertToString(

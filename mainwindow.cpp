@@ -56,6 +56,8 @@ void MainWindow::addInput() {
         new QTableWidgetItem(QStringLiteral("X%1").arg(m_inputs)));
 
     boolean_minimizer->addInput();
+    auto s = boolean_minimizer->calculate();
+    print(s);
 }
 
 void MainWindow::addOutput() {
@@ -65,6 +67,8 @@ void MainWindow::addOutput() {
         new QTableWidgetItem(QStringLiteral("Y%1").arg(m_outputs)));
 
     boolean_minimizer->addOutput();
+    auto s = boolean_minimizer->calculate();
+    print(s);
 }
 
 void MainWindow::addTerm() {
@@ -73,6 +77,8 @@ void MainWindow::addTerm() {
     m_terms++;
 
     boolean_minimizer->addTerm();
+    auto s = boolean_minimizer->calculate();
+    print(s);
 }
 
 void MainWindow::deleteInput() {
@@ -80,6 +86,8 @@ void MainWindow::deleteInput() {
     ui->input_table->removeColumn(--m_inputs);
 
     boolean_minimizer->deleteInput();
+    auto s = boolean_minimizer->calculate();
+    print(s);
 }
 
 void MainWindow::deleteOutput() {
@@ -87,6 +95,8 @@ void MainWindow::deleteOutput() {
     ui->output_table->removeColumn(--m_outputs);
 
     boolean_minimizer->deleteOutput();
+    auto s = boolean_minimizer->calculate();
+    print(s);
 }
 
 void MainWindow::deleteTerm() {
@@ -96,6 +106,8 @@ void MainWindow::deleteTerm() {
     ui->output_table->removeRow(m_terms);
 
     boolean_minimizer->deleteTerm();
+    auto s = boolean_minimizer->calculate();
+    print(s);
 }
 
 void MainWindow::changeInput(QTableWidgetItem *index) {
