@@ -66,8 +66,13 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
     std::list<std::vector<int8_t>> simple;
 
     while (loop) {
+        std::map<std::vector<int8_t>, bool> indexes;
+
+        for (auto it = pmap->begin(); it != pmap->end(); it++) {
+            indexes[it->second] = false;
+        }
+
         for (auto it_g1 = pmap->begin(); it_g1 != pmap->end(); it_g1++) {
-            bool added = false;
             auto it_g2 = pmap->find(it_g1->first + 1);
             if (it_g2 == pmap->end()) {
                 break;
@@ -76,15 +81,18 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
             for (; it_g2 != pmap->end(); it_g2++) {
                 int index = 0;
                 if ((index = compare(val.second, it_g2->second)) >= 0) {
-                    added = true;
                     auto new_val = val.second;
                     new_val[index] = -1;
                     nmap->insert(std::pair<int, std::vector<int8_t>>(val.first,
                                                                      new_val));
+                    indexes[val.second] = true;
+                    indexes[it_g2->second] = true;
                 }
             }
-            if (!added) {
-                simple.push_back(val.second);
+        }
+        for (auto &i : indexes) {
+            if (!i.second) {
+                simple.push_back(i.first);
             }
         }
         if (nmap->size() == 0) {
