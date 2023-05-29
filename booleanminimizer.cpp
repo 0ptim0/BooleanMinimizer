@@ -13,10 +13,22 @@ BooleanMinimizer::BooleanMinimizer(std::vector<std::vector<int8_t>> &input,
 
 std::vector<QString> BooleanMinimizer::calculate() {
     mutex.lock();
-    std::vector<std::vector<int>> indexes(m_outputs);
-    std::vector<int> v;
-    std::fill(indexes.begin(), indexes.end(), v);
 
+    std::vector<std::vector<int>> indexes(m_outputs);
+    getOutputTrueIndexes(indexes);
+
+    std::vector<std::vector<std::vector<int8_t>>> m_boolean_function;
+    calculateOutputs(m_boolean_function, indexes);
+
+    std::vector<QString> s;
+    convertToString(s, m_boolean_function);
+
+    mutex.unlock();
+    return s;
+}
+
+void BooleanMinimizer::getOutputTrueIndexes(
+    std::vector<std::vector<int>> &indexes) {
     for (int r_i = 0; r_i < m_output_table.size(); r_i++) {
         for (int r_c = 0; r_c < m_output_table[r_i].size(); r_c++) {
             if (m_output_table[r_i][r_c] == 1) {
@@ -24,20 +36,20 @@ std::vector<QString> BooleanMinimizer::calculate() {
             }
         }
     }
-
-    m_boolean_function.clear();
-    for (auto &i : indexes) {
-        m_boolean_function.push_back(calculateFunction(i));
-    }
-
-    std::vector<QString> s;
-    convertToString(s, m_boolean_function);
-    mutex.unlock();
-    return s;
 }
 
-std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
-    std::vector<int> &indexes) {
+void BooleanMinimizer::calculateOutputs(
+    std::vector<std::vector<std::vector<int8_t>>> &boolean_function,
+    std::vector<std::vector<int>> &output_indexes) {
+    for (auto &i : output_indexes) {
+        std::vector<std::vector<int8_t>> output;
+        calculateOutput(i, output);
+        boolean_function.push_back(output);
+    }
+}
+
+void BooleanMinimizer::calculateOutput(
+    std::vector<int> &indexes, std::vector<std::vector<int8_t>> &output) {
     std::vector<std::vector<int8_t>> vec;
     std::map<std::vector<int8_t>, int> uniq;
     std::multimap<int, std::vector<int8_t>> sorted;
@@ -140,7 +152,7 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
         }
     }
 
-    return vec;
+    output = vec;
 }
 
 int BooleanMinimizer::compareWithDiff(std::vector<int8_t> &first,
@@ -204,9 +216,9 @@ void BooleanMinimizer::convertToString(
     std::vector<QString> &str,
     std::vector<std::vector<std::vector<int8_t>>> &table) {
     for (int y = 0; y < table.size(); y++) {
-        //        if (table[y].size() >= 1) {
-        str.push_back(QString("Y%1 = ").arg(y + 1));
-        //        }
+        if (table[y].size() >= 1) {
+            str.push_back(QString("Y%1 = ").arg(y + 1));
+        }
         for (int t = 0; t < table[y].size(); t++) {
             for (int m = 0; m < table[y][t].size(); m++) {
                 if (table[y][t][m] == 1) {
@@ -229,7 +241,6 @@ void BooleanMinimizer::addInput() {
     }
     m_inputs++;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::addOutput() {
@@ -239,7 +250,6 @@ void BooleanMinimizer::addOutput() {
     }
     m_outputs++;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::addTerm() {
@@ -252,7 +262,6 @@ void BooleanMinimizer::addTerm() {
     m_output_table.push_back(c);
     m_terms++;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::deleteInput() {
@@ -263,7 +272,6 @@ void BooleanMinimizer::deleteInput() {
     }
     m_inputs--;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::deleteOutput() {
@@ -274,7 +282,6 @@ void BooleanMinimizer::deleteOutput() {
     }
     m_outputs--;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::deleteTerm() {
@@ -284,7 +291,6 @@ void BooleanMinimizer::deleteTerm() {
     m_output_table.erase(m_output_table.end() - 1);
     m_terms--;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::change(std::vector<std::vector<int8_t>> &table,
@@ -307,7 +313,6 @@ void BooleanMinimizer::change(std::vector<std::vector<int8_t>> &table,
         table[index->row()][index->column()] = rv;
     }
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::changeInput(QTableWidgetItem *index) {

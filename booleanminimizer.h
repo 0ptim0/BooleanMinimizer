@@ -29,8 +29,12 @@ public:
     std::vector<QString> calculate();
 
 private:
-    std::vector<std::vector<int8_t>> calculateFunction(
-        std::vector<int> &indexes);
+    void getOutputTrueIndexes(std::vector<std::vector<int>> &indexes);
+    void calculateOutputs(
+        std::vector<std::vector<std::vector<int8_t>>> &boolean_function,
+        std::vector<std::vector<int>> &output_indexes);
+    void calculateOutput(std::vector<int> &indexes,
+                         std::vector<std::vector<int8_t>> &output);
     void convertToString(std::vector<QString> &str,
                          std::vector<std::vector<std::vector<int8_t>>> &table);
     int compareWithDiff(std::vector<int8_t> &first,
@@ -45,7 +49,6 @@ private:
 private:
     std::vector<std::vector<int8_t>> m_input_table{{1}};
     std::vector<std::vector<int8_t>> m_output_table{{1}};
-    std::vector<std::vector<std::vector<int8_t>>> m_boolean_function;
     int m_inputs{1};
     int m_outputs{1};
     int m_terms{1};
