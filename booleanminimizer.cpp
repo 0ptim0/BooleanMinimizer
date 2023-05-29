@@ -6,7 +6,10 @@ BooleanMinimizer::BooleanMinimizer() {}
 
 BooleanMinimizer::BooleanMinimizer(std::vector<std::vector<int8_t>> &input,
                                    std::vector<std::vector<int8_t>> &output)
-    : m_input_table(input), m_output_table(output) {}
+    : m_input_table(input),
+      m_output_table(output),
+      m_inputs(input.size() > 0 ? input[0].size() : 0),
+      m_outputs(output.size() > 0 ? output[0].size() : 0) {}
 
 std::vector<QString> BooleanMinimizer::calculate() {
     mutex.lock();
