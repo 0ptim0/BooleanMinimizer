@@ -29,18 +29,16 @@ public:
     std::vector<QString> calculate();
 
 private:
-    void getOutputTrueIndexes(std::vector<std::vector<int>> &indexes);
     void calculateOutputs(
-        std::vector<std::vector<std::vector<int8_t>>> &boolean_function,
-        std::vector<std::vector<int>> &output_indexes);
-    void calculateOutput(std::vector<int> &indexes,
+        std::vector<std::vector<std::vector<int8_t>>> &boolean_function);
+    void calculateOutput(const std::vector<std::vector<int8_t>> &input,
                          std::vector<std::vector<int8_t>> &output);
     void convertToString(std::vector<QString> &str,
                          std::vector<std::vector<std::vector<int8_t>>> &table);
-    int compareWithDiff(std::vector<int8_t> &first,
-                        std::vector<int8_t> &second);
-    bool compareWithAbsorb(std::vector<int8_t> &first,
-                           std::vector<int8_t> &second);
+    int compareWithDiff(const std::vector<int8_t> &first,
+                        const std::vector<int8_t> &second);
+    bool compareWithAbsorb(const std::vector<int8_t> &first,
+                           const std::vector<int8_t> &second);
     void combine(std::vector<std::vector<int>> &minterms_w_indexes,
                  int number_of_miniterms, int index, int dnf_length,
                  std::set<int> &tmp, std::set<int> &indexes,
