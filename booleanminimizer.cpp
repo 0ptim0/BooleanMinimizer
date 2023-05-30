@@ -13,47 +13,49 @@ BooleanMinimizer::BooleanMinimizer(std::vector<std::vector<int8_t>> &input,
 
 std::vector<QString> BooleanMinimizer::calculate() {
     mutex.lock();
-    std::vector<std::vector<int>> indexes(m_outputs);
-    std::vector<int> v;
-    std::fill(indexes.begin(), indexes.end(), v);
 
-    for (int r_i = 0; r_i < m_output_table.size(); r_i++) {
-        for (int r_c = 0; r_c < m_output_table[r_i].size(); r_c++) {
-            if (m_output_table[r_i][r_c] == 1) {
-                indexes[r_c].push_back(r_i);
-            }
-        }
-    }
-
-    m_boolean_function.clear();
-    for (auto &i : indexes) {
-        m_boolean_function.push_back(calculateFunction(i));
-    }
+    std::vector<std::vector<std::vector<int8_t>>> m_boolean_function;
+    calculateOutputs(m_boolean_function);
 
     std::vector<QString> s;
     convertToString(s, m_boolean_function);
+
     mutex.unlock();
     return s;
 }
 
-std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
-    std::vector<int> &indexes) {
-    std::vector<std::vector<int8_t>> vec;
+void BooleanMinimizer::calculateOutputs(
+    std::vector<std::vector<std::vector<int8_t>>> &boolean_function) {
+    for (int r_c = 0, r_i = 0;
+         r_i < m_output_table.size() && r_c < m_output_table[r_i].size();
+         r_c++) {
+        std::vector<std::vector<int8_t>> input;
+        std::vector<std::vector<int8_t>> output;
+        for (; r_i < m_output_table.size(); r_i++) {
+            if (m_output_table[r_i][r_c] == 1) {
+                input.push_back(m_input_table[r_i]);
+            }
+        }
+        r_i = 0;
+        calculateOutput(input, output);
+        boolean_function.push_back(output);
+    }
+}
+
+void BooleanMinimizer::calculateOutput(
+    const std::vector<std::vector<int8_t>> &input,
+    std::vector<std::vector<int8_t>> &output) {
     std::map<std::vector<int8_t>, int> uniq;
     std::multimap<int, std::vector<int8_t>> sorted;
 
-    for (auto &i : indexes) {
-        vec.push_back(m_input_table[i]);
-    }
-
-    for (int i = 0; i < vec.size(); i++) {
+    for (int i = 0; i < input.size(); i++) {
         int ones = 0;
-        for (int j = 0; j < vec[i].size(); j++) {
-            if (vec[i][j] == 1) {
+        for (int j = 0; j < input[i].size(); j++) {
+            if (input[i][j] == 1) {
                 ones++;
             }
         }
-        uniq.insert(std::pair<std::vector<int8_t>, int>(vec[i], ones));
+        uniq.insert(std::pair<std::vector<int8_t>, int>(input[i], ones));
     }
 
     for (auto &i : uniq) {
@@ -61,32 +63,30 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
     }
 
     bool loop = true;
-    std::multimap<int, std::vector<int8_t>> *pmap =
-        new std::multimap<int, std::vector<int8_t>>(sorted);
-    std::multimap<int, std::vector<int8_t>> *nmap =
-        new std::multimap<int, std::vector<int8_t>>;
+    std::multimap<int, std::vector<int8_t>> pmap(sorted);
+    std::multimap<int, std::vector<int8_t>> nmap;
     std::vector<std::vector<int8_t>> simple;
 
     while (loop) {
         std::map<std::vector<int8_t>, bool> indexes;
 
-        for (auto it = pmap->begin(); it != pmap->end(); it++) {
+        for (auto it = pmap.begin(); it != pmap.end(); it++) {
             indexes[it->second] = false;
         }
 
-        for (auto it_g1 = pmap->begin(); it_g1 != pmap->end(); it_g1++) {
-            auto it_g2 = pmap->find(it_g1->first + 1);
-            if (it_g2 == pmap->end()) {
+        for (auto it_g1 = pmap.begin(); it_g1 != pmap.end(); it_g1++) {
+            auto it_g2 = pmap.find(it_g1->first + 1);
+            if (it_g2 == pmap.end()) {
                 break;
             }
             auto val = *it_g1;
-            for (; it_g2 != pmap->end(); it_g2++) {
+            for (; it_g2 != pmap.end(); it_g2++) {
                 int index = 0;
                 if ((index = compareWithDiff(val.second, it_g2->second)) >= 0) {
                     auto new_val = val.second;
                     new_val[index] = -1;
-                    nmap->insert(std::pair<int, std::vector<int8_t>>(val.first,
-                                                                     new_val));
+                    nmap.insert(std::pair<int, std::vector<int8_t>>(val.first,
+                                                                    new_val));
                     indexes[val.second] = true;
                     indexes[it_g2->second] = true;
                 }
@@ -97,12 +97,11 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
                 simple.push_back(i.first);
             }
         }
-        if (nmap->size() == 0) {
+        if (nmap.size() == 0) {
             loop = false;
         } else {
-            delete pmap;
             pmap = nmap;
-            nmap = new std::multimap<int, std::vector<int8_t>>;
+            nmap.clear();
         }
     }
 
@@ -117,7 +116,6 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
         }
     }
 
-    std::vector<std::vector<int>> min;
     std::set<int> tmp;
     std::set<int> ind;
     std::vector<std::set<int>> minimal_w_indexes;
@@ -128,23 +126,23 @@ std::vector<std::vector<int8_t>> BooleanMinimizer::calculateFunction(
     if (minimal_w_indexes.size() > 0) {
         int min_ind = 0;
         int min_size = minimal_w_indexes[min_ind].size();
-        vec.clear();
         for (int i = 1; i < minimal_w_indexes.size(); i++) {
             if (minimal_w_indexes[i].size() <= min_size) {
                 min_size = minimal_w_indexes.size();
                 min_ind = i;
             };
         }
-        for (auto &a : minimal_w_indexes[min_ind]) {
-            vec.push_back(simple[a]);
-        }
+        output.resize(minimal_w_indexes[min_ind].size());
+        std::transform(minimal_w_indexes[min_ind].begin(),
+                       minimal_w_indexes[min_ind].end(), output.begin(),
+                       [&](const auto &a) { return simple[a]; });
+    } else {
+        output = input;
     }
-
-    return vec;
 }
 
-int BooleanMinimizer::compareWithDiff(std::vector<int8_t> &first,
-                                      std::vector<int8_t> &second) {
+int BooleanMinimizer::compareWithDiff(const std::vector<int8_t> &first,
+                                      const std::vector<int8_t> &second) {
     int diff_index = -1;
     if (first.size() != second.size()) {
         return diff_index;
@@ -152,7 +150,7 @@ int BooleanMinimizer::compareWithDiff(std::vector<int8_t> &first,
     for (int i = 0; i < first.size(); i++) {
         if (first[i] == second[i]) {
             continue;
-        } else if (first[i] != second[i] && diff_index == -1) {
+        } else if (diff_index == -1) {
             diff_index = i;
         } else {
             diff_index = -1;
@@ -162,8 +160,8 @@ int BooleanMinimizer::compareWithDiff(std::vector<int8_t> &first,
     return diff_index;
 }
 
-bool BooleanMinimizer::compareWithAbsorb(std::vector<int8_t> &first,
-                                         std::vector<int8_t> &second) {
+bool BooleanMinimizer::compareWithAbsorb(const std::vector<int8_t> &first,
+                                         const std::vector<int8_t> &second) {
     if (first.size() != second.size()) {
         return false;
     }
@@ -204,9 +202,9 @@ void BooleanMinimizer::convertToString(
     std::vector<QString> &str,
     std::vector<std::vector<std::vector<int8_t>>> &table) {
     for (int y = 0; y < table.size(); y++) {
-        //        if (table[y].size() >= 1) {
-        str.push_back(QString("Y%1 = ").arg(y + 1));
-        //        }
+        // if (table[y].size() >= 1) {
+            str.push_back(QString("Y%1 = ").arg(y + 1));
+        // }
         for (int t = 0; t < table[y].size(); t++) {
             for (int m = 0; m < table[y][t].size(); m++) {
                 if (table[y][t][m] == 1) {
@@ -229,30 +227,24 @@ void BooleanMinimizer::addInput() {
     }
     m_inputs++;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::addOutput() {
-    std::vector<int8_t> vec;
     for (auto &r : m_output_table) {
         r.push_back(0);
     }
     m_outputs++;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::addTerm() {
     mutex.lock();
-    std::vector<int8_t> c(m_inputs);
-    std::fill(c.begin(), c.end(), 0);
-    m_input_table.push_back(c);
-    c.resize(m_outputs);
-    std::fill(c.begin(), c.end(), 0);
-    m_output_table.push_back(c);
+    std::vector<int8_t> i(m_inputs, 0);
+    std::vector<int8_t> o(m_outputs, 0);
+    m_input_table.push_back(i);
+    m_output_table.push_back(o);
     m_terms++;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::deleteInput() {
@@ -263,7 +255,6 @@ void BooleanMinimizer::deleteInput() {
     }
     m_inputs--;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::deleteOutput() {
@@ -274,7 +265,6 @@ void BooleanMinimizer::deleteOutput() {
     }
     m_outputs--;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::deleteTerm() {
@@ -284,7 +274,6 @@ void BooleanMinimizer::deleteTerm() {
     m_output_table.erase(m_output_table.end() - 1);
     m_terms--;
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::change(std::vector<std::vector<int8_t>> &table,
@@ -307,7 +296,6 @@ void BooleanMinimizer::change(std::vector<std::vector<int8_t>> &table,
         table[index->row()][index->column()] = rv;
     }
     mutex.unlock();
-    calculate();
 }
 
 void BooleanMinimizer::changeInput(QTableWidgetItem *index) {
