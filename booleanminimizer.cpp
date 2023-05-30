@@ -239,12 +239,10 @@ void BooleanMinimizer::addOutput() {
 
 void BooleanMinimizer::addTerm() {
     mutex.lock();
-    std::vector<int8_t> c(m_inputs);
-    std::fill(c.begin(), c.end(), 0);
-    m_input_table.push_back(c);
-    c.resize(m_outputs);
-    std::fill(c.begin(), c.end(), 0);
-    m_output_table.push_back(c);
+    std::vector<int8_t> i(m_inputs, 0);
+    std::vector<int8_t> o(m_outputs, 0);
+    m_input_table.push_back(i);
+    m_output_table.push_back(o);
     m_terms++;
     mutex.unlock();
 }
